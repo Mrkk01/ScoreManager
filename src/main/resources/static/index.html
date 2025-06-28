@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Score Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 30px;
+            background-color: #f0f2f5;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-weight: bold;
+        }
+        #personList .table th, #personList .table td {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1 class="mb-4 text-center text-primary">🌟 Person Manager Dashboard</h1>
+
+    <div id="alertBox"></div>
+
+    <!-- Set Limit at Top -->
+    <div class="card border-dark">
+        <div class="card-header bg-dark text-white">🔒 Set Global Score Limit</div>
+        <div class="card-body">
+            <form onsubmit="setLimit(event)">
+                <div class="mb-3">
+                    <label>New Limit:</label>
+                    <input type="number" id="limitScore" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-dark w-100">Set Limit</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mb-3 text-end">
+        <button class="btn btn-info" onclick="getAllPersons()">🔄 Refresh List</button>
+    </div>
+
+    <!-- Person List with Update & Delete Buttons -->
+    <div id="personList"></div>
+
+    <!-- Add New Person -->
+    <div class="card border-success">
+        <div class="card-header bg-success text-white">➕ Add New Person</div>
+        <div class="card-body">
+            <form onsubmit="addPerson(event)">
+                <div class="mb-3">
+                    <label>Name:</label>
+                    <input type="text" id="name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label>Initial Points:</label>
+                    <input type="number" id="points" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Add Person</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<!-- Add Score Modal -->
+<div class="modal fade" id="addScoreModal" tabindex="-1" aria-labelledby="addScoreModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="addScoreModalLabel">⬆️ Add Score</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modalPersonId">
+        <div class="mb-3">
+            <label>Score to Add:</label>
+            <input type="number" id="modalScore" class="form-control" placeholder="Enter score">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning" onclick="submitScore()">Submit Score</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    const apiUrl = "http://localhost:8080";
+    let selectedPersonId = null;
+
+    function showAlert(message, type = "success") {
+        document.getElementById('alertBox').innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+    }
+
+    function getAllPersons() {
+        fetch(apiUrl + "/get")
+            .then(response => response.json())
+            .then(data => {
+                let html = `<table class="table table-striped table-hover">
+                                <thead class="table-info">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Points</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                data.forEach(p => {
+                    html += `<tr>
+                                <td>${p.id}</td>
+                                <td>${p.name}</td>
+                                <td>${p.points}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm me-2" onclick="openAddScoreModal(${p.id})">Add Score</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deletePersonById(${p.id})">Delete</button>
+                                </td>
+                             </tr>`;
+                });
+                html += "</tbody></table>";
+                document.getElementById('personList').innerHTML = html;
+            });
+    }
+
+    function openAddScoreModal(id) {
+        selectedPersonId = id;
+        document.getElementById('modalPersonId').value = id;
+        document.getElementById('modalScore').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('addScoreModal'));
+        modal.show();
+    }
+
+    function submitScore() {
+        const score = document.getElementById('modalScore').value;
+        fetch(`${apiUrl}/addscore?id=${selectedPersonId}&score=${score}`, { method: "PUT" })
+            .then(response => response.text())
+            .then(msg => {
+                showAlert(msg);
+                getAllPersons();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addScoreModal'));
+                modal.hide();
+            });
+    }
+
+    function addPerson(event) {
+        event.preventDefault();
+        fetch(apiUrl + "/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: document.getElementById('name').value,
+                points: parseInt(document.getElementById('points').value)
+            })
+        }).then(response => {
+            if (response.ok) {
+                showAlert("✅ Person Added Successfully!");
+                getAllPersons();
+            } else {
+                showAlert("❌ Failed to add person", "danger");
+            }
+        });
+    }
+
+    function deletePersonById(id) {
+        fetch(`${apiUrl}/delete?id=${id}`, { method: "DELETE" })
+            .then(response => response.text())
+            .then(msg => {
+                showAlert(msg, "warning");
+                getAllPersons();
+            });
+    }
+
+    function setLimit(event) {
+        event.preventDefault();
+        const score = document.getElementById('limitScore').value;
+        fetch(`${apiUrl}/setlimit?score=${score}`, { method: "PUT" })
+            .then(() => {
+                showAlert("✅ Limit Set Successfully!");
+            });
+    }
+
+    window.onload = getAllPersons;
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
