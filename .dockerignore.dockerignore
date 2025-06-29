@@ -1,30 +1,9 @@
-# Maven build directory
-/target/
-
-# Git files
+target
 .git
 .gitignore
-
-# Docker
 Dockerfile
-
-# Project README
 README.md
-
-# Logs
 *.log
-
-# IDE specific folders and files
-.idea/
+.idea
 *.iml
-.vscode/
-
-# Node.js dependencies (if you are using Node frontend)
-node_modules/
-
-# Operating System files
-.DS_Store
-Thumbs.db
-
-# Sensitive Spring Boot config files
-src/main/resources/application.properties
+node_modules
