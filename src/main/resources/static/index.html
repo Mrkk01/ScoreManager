@@ -30,7 +30,7 @@
 
     <div id="alertBox"></div>
 
-    <!-- Set Limit at Top -->
+    <!-- Set Limit -->
     <div class="card border-dark">
         <div class="card-header bg-dark text-white">🔒 Set Global Score Limit</div>
         <div class="card-body">
@@ -48,7 +48,7 @@
         <button class="btn btn-info" onclick="getAllPersons()">🔄 Refresh List</button>
     </div>
 
-    <!-- Person List with Update & Delete Buttons -->
+    <!-- Person List -->
     <div id="personList"></div>
 
     <!-- Add New Person -->
@@ -95,7 +95,9 @@
 </div>
 
 <script>
-    const apiUrl = "http://localhost:8080";
+    // ✅ Use dynamic origin (works locally and on Render)
+    const apiUrl = window.location.origin;
+
     let selectedPersonId = null;
 
     function showAlert(message, type = "success") {
